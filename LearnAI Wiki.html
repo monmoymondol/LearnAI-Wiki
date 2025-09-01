@@ -1,0 +1,364 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>LearnAI Wiki - Personal Learning Assistant</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link
+    rel="stylesheet"
+    href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css"
+  />
+  <style>
+    @import url("https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap");
+
+    body {
+      font-family: "Inter", sans-serif;
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      min-height: 100vh;
+    }
+
+    .chat-container {
+      backdrop-filter: blur(10px);
+      background: rgba(255, 255, 255, 0.1);
+      border: 1px solid rgba(255, 255, 255, 0.2);
+    }
+
+    .message {
+      max-width: 80%;
+      animation: fadeIn 0.3s ease-in;
+      white-space: pre-wrap;
+      word-wrap: break-word;
+    }
+
+    .typing-indicator {
+      display: inline-flex;
+      align-items: center;
+      padding: 8px 12px;
+      background: #e5e7eb;
+      border-radius: 18px;
+    }
+
+    .typing-dot {
+      width: 4px;
+      height: 4px;
+      background: #6b7280;
+      border-radius: 50%;
+      margin: 0 2px;
+      animation: typing 1.4s infinite;
+    }
+
+    .typing-dot:nth-child(2) {
+      animation-delay: 0.2s;
+    }
+    .typing-dot:nth-child(3) {
+      animation-delay: 0.4s;
+    }
+
+    @keyframes typing {
+      0%,
+      60%,
+      100% {
+        transform: translateY(0);
+      }
+      30% {
+        transform: translateY(-4px);
+      }
+    }
+
+    @keyframes fadeIn {
+      from {
+        opacity: 0;
+        transform: translateY(10px);
+      }
+      to {
+        opacity: 1;
+        transform: translateY(0);
+      }
+    }
+
+    .learning-suggestion {
+      transition: all 0.3s ease;
+      cursor: pointer;
+    }
+
+    .learning-suggestion:hover {
+      transform: translateX(5px);
+      background: rgba(255, 255, 255, 0.2);
+    }
+  </style>
+</head>
+<body class="min-h-screen flex items-center justify-center p-4">
+  <div class="w-full max-w-4xl mx-auto">
+    <!-- Header -->
+    <div class="text-center mb-8">
+      <div class="flex items-center justify-center mb-4">
+        <div
+          class="w-16 h-16 rounded-full bg-white/20 flex items-center justify-center"
+        >
+          <i class="fas fa-brain text-3xl text-white"></i>
+        </div>
+      </div>
+      <h1 class="text-4xl font-bold text-white mb-2">LearnAI Wiki</h1>
+      <p class="text-white/80 text-lg">Your Personal Learning Companion</p>
+      <p class="text-white/60 text-sm mt-1">
+        Powered by Wikipedia • Text-only interaction • Secure and private
+      </p>
+    </div>
+
+    <!-- Main Chat Container -->
+    <div class="chat-container rounded-2xl p-6 shadow-2xl">
+      <!-- Welcome Message -->
+      <div id="welcome-section" class="text-center mb-6">
+        <p class="text-white/90 mb-4">
+          Welcome! Ask me anything and I'll try to find the best explanation
+          from Wikipedia.
+        </p>
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-3">
+          <div
+            class="learning-suggestion bg-white/10 p-4 rounded-xl text-white cursor-pointer"
+            onclick="sendSuggestion('Explain machine learning basics')"
+          >
+            <i class="fas fa-robot mr-2"></i> Explain machine learning basics
+          </div>
+          <div
+            class="learning-suggestion bg-white/10 p-4 rounded-xl text-white cursor-pointer"
+            onclick="sendSuggestion('Help me with programming concepts')"
+          >
+            <i class="fas fa-code mr-2"></i> Help with programming concepts
+          </div>
+          <div
+            class="learning-suggestion bg-white/10 p-4 rounded-xl text-white cursor-pointer"
+            onclick="sendSuggestion('Teach me about science topics')"
+          >
+            <i class="fas fa-flask mr-2"></i> Science topics
+          </div>
+          <div
+            class="learning-suggestion bg-white/10 p-4 rounded-xl text-white cursor-pointer"
+            onclick="sendSuggestion('Help me study for a test')"
+          >
+            <i class="fas fa-graduation-cap mr-2"></i> Study help
+          </div>
+        </div>
+      </div>
+
+      <!-- Chat Messages -->
+      <div
+        id="chat-messages"
+        class="h-96 overflow-y-auto mb-4 space-y-4 p-4 bg-white/5 rounded-xl"
+      >
+        <!-- Messages will be dynamically added here -->
+      </div>
+
+      <!-- Input Area -->
+      <div class="flex gap-2">
+        <input
+          type="text"
+          id="user-input"
+          placeholder="Type your question or learning topic..."
+          class="flex-1 px-4 py-3 rounded-full bg-white/10 border border-white/20 text-white placeholder-white/60 focus:outline-none focus:ring-2 focus:ring-white/30"
+          onkeypress="handleKeyPress(event)"
+          autocomplete="off"
+          spellcheck="false"
+        />
+        <button
+          onclick="sendMessage()"
+          class="px-6 py-3 bg-white text-purple-700 rounded-full font-semibold hover:bg-gray-100 transition-colors"
+        >
+          <i class="fas fa-paper-plane mr-2"></i>Send
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    let conversationHistory = [];
+
+    // Predefined fallback AI responses
+    const aiResponses = {
+      machine_learning:
+        "Machine learning is a subset of artificial intelligence that enables systems to learn and improve from experience without explicit programming. It uses algorithms to analyze data, learn from it, and make predictions or decisions. There are three main types: supervised learning, unsupervised learning, and reinforcement learning.",
+      programming:
+        "Programming is the process of creating instructions for computers to execute. Key concepts include variables, data types, control structures (if/else, loops), functions, and algorithms. Popular languages include Python, JavaScript, Java, and C++. Each has its strengths for different types of projects.",
+      science:
+        "Science is the systematic study of the natural world through observation and experimentation. Major branches include physics, chemistry, biology, and earth sciences. The scientific method involves making observations, forming hypotheses, conducting experiments, and drawing conclusions.",
+      study:
+        "Effective study techniques include spaced repetition, active recall, and the Feynman technique. Create a study schedule, break material into chunks, and test yourself regularly. Remember to take breaks and maintain a good study environment.",
+      default:
+        "I'm here to help you learn! Could you please clarify your question or specify a topic? I can fetch information from Wikipedia to assist you.",
+    };
+
+    // Utility: sanitize text to prevent HTML injection
+    function sanitize(text) {
+      const div = document.createElement("div");
+      div.textContent = text;
+      return div.innerHTML;
+    }
+
+    // Add message to chat window
+    function addMessage(text, sender) {
+      const messagesContainer = document.getElementById("chat-messages");
+      const messageDiv = document.createElement("div");
+      messageDiv.className = `message ${
+        sender === "user"
+          ? "ml-auto bg-blue-500 text-white"
+          : "mr-auto bg-gray-100 text-gray-800"
+      } rounded-2xl px-4 py-3`;
+      messageDiv.innerHTML = sanitize(text);
+      messagesContainer.appendChild(messageDiv);
+      messagesContainer.scrollTop = messagesContainer.scrollHeight;
+    }
+
+    // Show typing indicator
+    function showTypingIndicator() {
+      const messagesContainer = document.getElementById("chat-messages");
+      const typingDiv = document.createElement("div");
+      typingDiv.id = "typing-indicator";
+      typingDiv.className = "message mr-auto";
+      typingDiv.innerHTML = `
+                <div class="typing-indicator">
+                    <span class="typing-dot"></span>
+                    <span class="typing-dot"></span>
+                    <span class="typing-dot"></span>
+                </div>
+            `;
+      messagesContainer.appendChild(typingDiv);
+      messagesContainer.scrollTop = messagesContainer.scrollHeight;
+    }
+
+    // Remove typing indicator
+    function removeTypingIndicator() {
+      const typingIndicator = document.getElementById("typing-indicator");
+      if (typingIndicator) {
+        typingIndicator.remove();
+      }
+    }
+
+    // Send user message and trigger AI response
+    async function sendMessage() {
+      const input = document.getElementById("user-input");
+      const message = input.value.trim();
+      if (!message) return;
+
+      addMessage(message, "user");
+      input.value = "";
+      showTypingIndicator();
+
+      // Fetch AI response (try Wikipedia first)
+      try {
+        const wikiSummary = await fetchWikipediaSummary(message);
+        removeTypingIndicator();
+
+        if (wikiSummary) {
+          addMessage(wikiSummary, "ai");
+          conversationHistory.push({ user: message, ai: wikiSummary });
+        } else {
+          // Fallback to predefined responses
+          const fallback = generateFallbackResponse(message.toLowerCase());
+          addMessage(fallback, "ai");
+          conversationHistory.push({ user: message, ai: fallback });
+        }
+      } catch (error) {
+        removeTypingIndicator();
+        addMessage(
+          "Sorry, I had trouble fetching information. Please try again later.",
+          "ai"
+        );
+      }
+    }
+
+    // Send suggestion from quick buttons
+    function sendSuggestion(suggestion) {
+      document.getElementById("user-input").value = suggestion;
+      sendMessage();
+    }
+
+    // Handle Enter key press
+    function handleKeyPress(event) {
+      if (event.key === "Enter") {
+        sendMessage();
+      }
+    }
+
+    // Generate fallback AI response based on keywords
+    function generateFallbackResponse(message) {
+      if (
+        message.includes("machine learning") ||
+        message.includes("ai") ||
+        message.includes("artificial intelligence")
+      ) {
+        return aiResponses.machine_learning;
+      } else if (
+        message.includes("programming") ||
+        message.includes("code") ||
+        message.includes("developer")
+      ) {
+        return aiResponses.programming;
+      } else if (
+        message.includes("science") ||
+        message.includes("physics") ||
+        message.includes("chemistry") ||
+        message.includes("biology")
+      ) {
+        return aiResponses.science;
+      } else if (
+        message.includes("study") ||
+        message.includes("learn") ||
+        message.includes("education")
+      ) {
+        return aiResponses.study;
+      } else if (
+        message.includes("hello") ||
+        message.includes("hi") ||
+        message.includes("hey")
+      ) {
+        return "Hello! I'm here to help you learn. What would you like to explore today?";
+      } else if (message.includes("thank")) {
+        return "You're welcome! Is there anything else you'd like to learn about?";
+      } else {
+        return aiResponses.default;
+      }
+    }
+
+    // Fetch summary from Wikipedia API
+    async function fetchWikipediaSummary(query) {
+      // Use MediaWiki API to search for the query and get the summary
+      const apiUrl = `https://en.wikipedia.org/w/api.php?origin=*&action=query&format=json&prop=extracts&exintro&explaintext&redirects=1&titles=${encodeURIComponent(
+        query
+      )}`;
+
+      const response = await fetch(apiUrl);
+      if (!response.ok) return null;
+
+      const data = await response.json();
+      const pages = data.query.pages;
+      const pageId = Object.keys(pages)[0];
+
+      if (pageId === "-1") {
+        // No article found
+        return null;
+      }
+
+      const extract = pages[pageId].extract;
+      if (!extract) return null;
+
+      // Limit summary length for chat readability
+      const maxLength = 800;
+      return extract.length > maxLength
+        ? extract.slice(0, maxLength) + "..."
+        : extract;
+    }
+
+    // Initialize with welcome message
+    document.addEventListener("DOMContentLoaded", function () {
+      const messagesContainer = document.getElementById("chat-messages");
+      const welcomeMessage = document.createElement("div");
+      welcomeMessage.className =
+        "message mr-auto bg-gray-100 text-gray-800 rounded-2xl px-4 py-3";
+      welcomeMessage.textContent =
+        "Hi there! I'm LearnAI Wiki, your personal learning assistant. Ask me anything and I'll try to find the best explanation from Wikipedia.";
+      messagesContainer.appendChild(welcomeMessage);
+    });
+  </script>
+</body>
+</html>
